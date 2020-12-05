@@ -81,7 +81,7 @@ public class ListenerTest extends Assert {
         eppRegistryElements.forEach(eppRegistryElement -> createParts(elemId2Parts, eppRegistryElement));
 
 
-        //relations
+        //relations test
         Collection<MainBond> mainBonds = new ArrayList<>(modules.size());
         HashMap<EppRegistryProfModule, Collection<EppRegistryElement>> moduleToRegElements = new HashMap<>(modules.size());
         moduleToRegElements.put(modules.get(0), eppRegistryElements.subList(0, 3));
