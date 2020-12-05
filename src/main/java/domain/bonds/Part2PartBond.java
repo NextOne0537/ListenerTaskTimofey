@@ -14,16 +14,28 @@ public class Part2PartBond extends Entity {
 
     @NotNull
     @ManyToOne
-    private MainBond mainBond;
+    private final MainBond mainBond;
     @NotNull
-    private EppRegistryElementPart modulePart;
+    private final EppRegistryElementPart modulePart;
     @NotNull
-    private EppRegistryElementPart elementPart;
+    private final EppRegistryElementPart elementPart;
 
     public Part2PartBond(@NotNull MainBond mainBond, @NotNull EppRegistryElementPart modulePart, @NotNull EppRegistryElementPart elementPart) {
         super();
         this.mainBond = mainBond;
         this.modulePart = modulePart;
         this.elementPart = elementPart;
+    }
+
+    public MainBond getMainBond() {
+        return mainBond;
+    }
+
+    public EppRegistryElementPart getModulePart() {
+        return modulePart;
+    }
+
+    public EppRegistryElementPart getElementPart() {
+        return elementPart;
     }
 }
