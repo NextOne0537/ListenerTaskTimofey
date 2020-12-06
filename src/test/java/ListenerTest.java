@@ -41,7 +41,7 @@ public class ListenerTest extends Assert {
     @Test
     public void onEventTest(){
         testCases.forEach(testCase ->{
-            assertTrue(listener.onEvent(testCase.getProfModules(), testCase.getMainBonds(), testCase.getPart2PartBonds()));
+            assertTrue(listener.onEvent(testCase.getProfModules(), testCase.getRegistryElements(), testCase.getMainBonds(), testCase.getPart2PartBonds()));
         });
     }
 
@@ -56,11 +56,11 @@ public class ListenerTest extends Assert {
         }};
 
         //profModules
-        HashMap<Long, List<EppRegistryElementPart>> moduleId2Parts = new HashMap<>(modules.size());
-        modules.forEach(module -> createParts(moduleId2Parts, module));
+        HashMap<EppRegistryProfModule, List<EppRegistryElementPart>> module2Parts = new HashMap<>(modules.size());
+        modules.forEach(module -> createParts(module2Parts, module));
 
         //elements
-        HashMap<Long, List<EppRegistryElementPart>> elemId2Parts = new HashMap<>(modules.size());
+        HashMap<EppRegistryElement, List<EppRegistryElementPart>> elem2Parts = new HashMap<>(modules.size());
         List<EppRegistryElement> eppRegistryElements = new ArrayList<>() {{
             add(new EppRegistryElement("Вложенное мероприятие 1", EppState.Forming));
             add(new EppRegistryElement("Вложенное мероприятие 2", EppState.Archived));
@@ -78,8 +78,7 @@ public class ListenerTest extends Assert {
         }};
 
         //RegElements
-        eppRegistryElements.forEach(eppRegistryElement -> createParts(elemId2Parts, eppRegistryElement));
-
+        eppRegistryElements.forEach(eppRegistryElement -> createParts(elem2Parts, eppRegistryElement));
 
         //relations
         Collection<MainBond> mainBonds = new ArrayList<>(modules.size());
@@ -87,7 +86,7 @@ public class ListenerTest extends Assert {
         moduleToRegElements.put(modules.get(0), eppRegistryElements.subList(0, 3));
         moduleToRegElements.put(modules.get(1), eppRegistryElements.subList(3, 6));
         moduleToRegElements.put(modules.get(2), eppRegistryElements.subList(6, 9));
-        moduleToRegElements.put(modules.get(3), eppRegistryElements.subList(10, 12));
+        moduleToRegElements.put(modules.get(3), eppRegistryElements.subList(9, 13));
         moduleToRegElements.put(modules.get(4),  Collections.emptyList());
 
         moduleToRegElements.forEach((id, collection) ->{
@@ -95,22 +94,24 @@ public class ListenerTest extends Assert {
         });
 
         //part2part relations (correct distributing)
-        Collection<Part2PartBond> parts2Parts = createParts2Parts(moduleId2Parts, elemId2Parts, mainBonds);
+        Collection<Part2PartBond> parts2Parts = createParts2Parts(module2Parts, elem2Parts, mainBonds);
 
-        return new TestDataWrapper(modules, parts2Parts, mainBonds);
+        return new TestDataWrapper(module2Parts, elem2Parts, parts2Parts, mainBonds);
     }
 
     /**
      * Util
      */
-    private static Collection<Part2PartBond> createParts2Parts(HashMap<Long, List<EppRegistryElementPart>> moduleId2Parts, HashMap<Long, List<EppRegistryElementPart>> elemId2Parts, Collection<MainBond> mainBonds) {
+    private static Collection<Part2PartBond> createParts2Parts(HashMap<EppRegistryProfModule, List<EppRegistryElementPart>> moduleId2Parts,
+                                                               HashMap<EppRegistryElement, List<EppRegistryElementPart>> elemId2Parts,
+                                                               Collection<MainBond> mainBonds) {
         List<Part2PartBond> part2PartBonds = new ArrayList<>();
         mainBonds.forEach(mainBond ->{
             EppRegistryProfModule module = mainBond.getModule();
             EppRegistryElement element = mainBond.getElement();
 
-            var eppRegistryElementParts = elemId2Parts.getOrDefault(element.getId(), Collections.emptyList());
-            var moduleParts = moduleId2Parts.getOrDefault(module.getId(), Collections.emptyList());
+            var eppRegistryElementParts = elemId2Parts.getOrDefault(element, Collections.emptyList());
+            var moduleParts = moduleId2Parts.getOrDefault(module, Collections.emptyList());
 
             for (int i = 0; i < moduleParts.size(); i++) {
                 var modulePart = moduleParts.get(i);
@@ -128,11 +129,14 @@ public class ListenerTest extends Assert {
     /**
      * Util
      */
-    private static void createParts(HashMap<Long, List<EppRegistryElementPart>> moduleId2Parts, EppRegistryElement module) {
-        int partsNumber = (int) (Math.random() * 3); //количество частей на каждый профмодуль
+    private static <T extends EppRegistryElement> void createParts(HashMap<T, List<EppRegistryElementPart>> regElemToParts, T regElement) {
+        Random rand = new Random();
+        int partsNumber = rand.nextInt(4);  //количество частей на каждый элемент реестра (проф модуль)
+        regElemToParts.put(regElement, new ArrayList<>());
+
         for (int i = 0; i < partsNumber; i++) {
-            EppRegistryElementPart modulePart = new EppRegistryElementPart(module);
-            moduleId2Parts.computeIfAbsent(module.getId(), k -> new ArrayList<>()).add(modulePart);
+            EppRegistryElementPart modulePart = new EppRegistryElementPart(regElement);
+            regElemToParts.get(regElement).add(modulePart);
         }
     }
 

@@ -29,7 +29,7 @@ public class ListenerTest2 extends Assert {
     @Test()
     @Parameters(method = "someData")
     public void test1(TestDataWrapper testDataWrapper){
-        assertThrows(NullPointerException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
+        assertThrows(NullPointerException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
     }
 
     @Before
