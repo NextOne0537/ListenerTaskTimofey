@@ -15,7 +15,7 @@ public class EppRegistryElementPart extends Entity {
 
     public EppRegistryElementPart(EppRegistryElement parent) {
         super();
-        int partNumber = PartNumberGenerator.INSTANCE.getPartNumber(this.getId());
+        int partNumber = PartNumberGenerator.INSTANCE.getPartNumber(parent.getId());
         this.title = "Часть " + parent.getTitle() + " №" + partNumber;
         this.number = partNumber;
         this.parent = parent;
