@@ -11,10 +11,12 @@ import listener.Listener;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-import javax.validation.constraints.NotNull;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+
+import static util.TestUtils.*;
 
 /**
  * @author Melton Smith
@@ -25,27 +27,68 @@ public class ListenerTest2 extends Assert {
 
     private IListenProfModules listener;
 
-    public static List<TestDataWrapper> wrongDistributionData() {
+    private static List<TestDataWrapper> wrongDistributionData() {
         return List.of(testCase2());
     }
 
-//    @Test(expected = NullPointerException.class)
-//    @Parameters(method = "someData")
-//    public void test(TestDataWrapper testDataWrapper){
-//        throw new NullPointerException();
-//    }
-
+    private static List<TestDataWrapper> wrongDistributionOrderData() {
+        return List.of(testCase1());
+    }
 
     /**
-     * Util
+     * I expect "wrong distribution order" here because of
+     * the element with index 3 (Вложенное мероприятие 3) and  the element with index 2 (Вложенное мероприятие 2)
      */
-    private static <T extends EppRegistryElement> void createParts(HashMap<T, List<EppRegistryElementPart>> regElemToParts, T regElement, int partsNumber) {
-        regElemToParts.put(regElement, new ArrayList<>());
+    public static TestDataWrapper testCase1(){
+        List<EppRegistryProfModule> modules = new ArrayList<>() {{
+            add(new EppRegistryProfModule("Модуль 1", EppState.Accepted));
+        }};
 
-        for (int i = 0; i < partsNumber; i++) {
-            EppRegistryElementPart modulePart = new EppRegistryElementPart(regElement);
-            regElemToParts.get(regElement).add(modulePart);
-        }
+        //profModules
+        HashMap<EppRegistryProfModule, List<EppRegistryElementPart>> module2Parts = new HashMap<>(modules.size());
+
+        createParts(module2Parts, modules.get(0), 4);
+
+
+        //elements
+        HashMap<EppRegistryElement, List<EppRegistryElementPart>> elem2Parts = new HashMap<>(modules.size());
+        List<EppRegistryElement> eppRegistryElements = new ArrayList<>() {{
+            add(new EppRegistryElement("Вложенное мероприятие 0", EppState.Accepted));
+            add(new EppRegistryElement("Вложенное мероприятие 1", EppState.Accepted));
+            add(new EppRegistryElement("Вложенное мероприятие 2", EppState.Accepted));
+            add(new EppRegistryElement("Вложенное мероприятие 3", EppState.Accepted));
+        }};
+
+        //RegElements
+        createParts(elem2Parts, eppRegistryElements.get(0), 2);
+        createParts(elem2Parts, eppRegistryElements.get(1), 3);
+        createParts(elem2Parts, eppRegistryElements.get(2), 4);
+        createParts(elem2Parts, eppRegistryElements.get(3), 3);
+
+
+        //relations
+        Collection<MainBond> mainBonds = new ArrayList<>(modules.size());
+        HashMap<EppRegistryProfModule, Collection<EppRegistryElement>> moduleToRegElements = new HashMap<>(modules.size());
+        moduleToRegElements.put(modules.get(0), eppRegistryElements);
+
+
+        //module to its bonds
+        HashMap<EppRegistryProfModule, Collection<MainBond>> profModuleToBonds = new HashMap<>();
+
+        moduleToRegElements.forEach((profModule, collection) ->{
+            Collection<MainBond> mainBondsForModule = createMainBonds(profModule, collection);
+            profModuleToBonds.put(profModule, mainBondsForModule);
+            mainBonds.addAll(mainBondsForModule);
+        });
+
+        List<Part2PartBond> parts2Parts = new ArrayList<>();
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(0), module2Parts, elem2Parts, profModuleToBonds, "1/1", "2/2"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(1), module2Parts, elem2Parts, profModuleToBonds, "1/1", "2/2", "3/4"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(2), module2Parts, elem2Parts, profModuleToBonds, "1/4", "2/2", "3/3", "4/1"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(3), module2Parts, elem2Parts, profModuleToBonds, "1/2", "2/1", "3/4"));
+
+
+        return new TestDataWrapper(module2Parts, elem2Parts, parts2Parts, mainBonds);
     }
 
 
@@ -113,7 +156,7 @@ public class ListenerTest2 extends Assert {
         HashMap<EppRegistryProfModule, Collection<MainBond>> profModuleToBonds = new HashMap<>();
 
         moduleToRegElements.forEach((profModule, collection) ->{
-            Collection<MainBond> mainBondsForModule = generateMainBonds(profModule, collection);
+            Collection<MainBond> mainBondsForModule = createMainBonds(profModule, collection);
             profModuleToBonds.put(profModule, mainBondsForModule);
             mainBonds.addAll(mainBondsForModule);
         });
@@ -126,83 +169,20 @@ public class ListenerTest2 extends Assert {
         return new TestDataWrapper(module2Parts, elem2Parts, parts2Parts, mainBonds);
     }
 
-    /**
-     * @param profModule a profModule for which we want to create part2part
-     * @param registryElement a registryElement for which we want to create part2part
-     * @param module2Parts modules to their parts
-     * @param elem2Parts elements to their parts
-     * @param profModuleToBonds modules to their mainBonds
-     * @param parts a string array which represents parts distribution (elemPartNumber/modulePartNumber).
-     *              For example: (1/2, 2/3) means that I want to create part2part bond between: elemPart #1 and modulePart #2
-     *                                                                                          elemPart #2 and modulePart #3
-     * @return partBonds created
-     */
-    private static List<Part2PartBond> createPart2Part(EppRegistryProfModule profModule,  EppRegistryElement registryElement,
-                                                       HashMap<EppRegistryProfModule, List<EppRegistryElementPart>> module2Parts,
-                                                       HashMap<EppRegistryElement, List<EppRegistryElementPart>> elem2Parts,
-                                                       HashMap<EppRegistryProfModule, Collection<MainBond>> profModuleToBonds,
-                                                       String... parts) {
-        List<EppRegistryElementPart> moduleParts = module2Parts.get(profModule);
-        List<EppRegistryElementPart> regElemParts = elem2Parts.get(registryElement);
-        Optional<MainBond> mainBondOpt = profModuleToBonds.get(profModule)
-                .stream()
-                .filter(mainBond -> mainBond.getElement().equals(registryElement))
-                .findFirst();
 
-        return mainBondOpt
-                .map(mainBond -> createDistribution(moduleParts, regElemParts, mainBond, parts))
-                .orElse(Collections.emptyList());
-    }
-
-    /**
-     *
-     * @param parts regElemPart - modulePart, example (1/2, 2/3)
-     */
-    private static List<Part2PartBond> createDistribution (List<EppRegistryElementPart> moduleParts,
-                                                            List<EppRegistryElementPart> elementParts,
-                                                            MainBond mainBond,
-                                                            String... parts){
-        List<Part2PartBond> result = new ArrayList<>();
-
-        Arrays.stream(parts)
-                .forEach(string -> {
-                    String[] split = string.split("/");
-                    int regElemPartNumber = Integer.parseInt(split[0]);
-                    int modulePartNumber = Integer.parseInt(split[1]);
-
-                    Optional<EppRegistryElementPart> modulePart = moduleParts.stream()
-                                                                            .filter(part -> part.getNumber() == modulePartNumber)
-                                                                            .findFirst();
-                    Optional<EppRegistryElementPart> registryElementPart = elementParts.stream()
-                                                                                    .filter(part -> part.getNumber() == regElemPartNumber)
-                                                                                    .findFirst();
-                    if (registryElementPart.isPresent() && modulePart.isPresent())
-                         result.add(new Part2PartBond(mainBond, modulePart.get(), registryElementPart.get()));
-
-                });
-
-        return result;
-    }
-
-
-    /**
-     * Util
-     * do not use twice for a single profModule
-     */
-    private static Collection<MainBond> generateMainBonds(@NotNull EppRegistryProfModule module, @NotNull Collection<EppRegistryElement> eppRegistryElements){
-        AtomicInteger atomicInteger = new AtomicInteger(1);
-
-        return eppRegistryElements
-                .stream()
-                .map(regElement -> new MainBond(atomicInteger.getAndIncrement(), module, regElement))
-                .collect(Collectors.toList());
-    }
 
     @Test
     @Parameters(method = "wrongDistributionData")
-    public void test1(TestDataWrapper testDataWrapper){
+    public void wrongDistributionTest(TestDataWrapper testDataWrapper){
         var illegalStateException = assertThrows(IllegalStateException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
         assertEquals("Нельзя согласовать профмодуль Модуль 1, т.к. распределены не все части вложенных элементов.", illegalStateException.getMessage());
+    }
+
+    @Test
+    @Parameters(method = "wrongDistributionOrderData")
+    public void wrongDistributionOrderTest(TestDataWrapper testDataWrapper){
+        var illegalStateException = assertThrows(IllegalStateException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
+        assertEquals("Нельзя согласовать профмодуль Модуль 1, т.к. части вложенного мероприятия Вложенное мероприятие 2 распределены в неправильном порядке.", illegalStateException.getMessage());
     }
 
     @Before

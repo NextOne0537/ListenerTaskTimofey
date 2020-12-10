@@ -6,7 +6,7 @@ import domain.EppState;
  * @author Melton Smith
  * @since 03.12.2020
  */
-public class StateObject extends Entity{
+public abstract class StateObject extends Entity{
 
     private EppState state;
 
