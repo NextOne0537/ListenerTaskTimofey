@@ -119,19 +119,16 @@ public class ListenerTest2 extends Assert {
         });
 
         List<Part2PartBond> parts2Parts = new ArrayList<>();
-        parts2Parts.addAll(createPart2Part(0, 3, eppRegistryElements, modules, module2Parts, elem2Parts, profModuleToBonds, "1/2", "2/1"));
-        parts2Parts.addAll(createPart2Part(0, 6, eppRegistryElements, modules, module2Parts, elem2Parts, profModuleToBonds, "1/2", "2/3"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(3), module2Parts, elem2Parts, profModuleToBonds, "1/2", "2/1"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(6), module2Parts, elem2Parts, profModuleToBonds, "1/2", "2/3"));
 
 
         return new TestDataWrapper(module2Parts, elem2Parts, parts2Parts, mainBonds);
     }
 
     /**
-     *
-     * @param moduleIndex index of the module from init collection (modules)
-     * @param elemenIndex index of the embedded regElement from init collection (elements)
-     * @param elements init collection of regElements
-     * @param modules init collection of profModules
+     * @param profModule a profModule for which we want to create part2part
+     * @param registryElement a registryElement for which we want to create part2part
      * @param module2Parts modules to their parts
      * @param elem2Parts elements to their parts
      * @param profModuleToBonds modules to their mainBonds
@@ -140,18 +137,16 @@ public class ListenerTest2 extends Assert {
      *                                                                                          elemPart #2 and modulePart #3
      * @return partBonds created
      */
-    private static List<Part2PartBond> createPart2Part(Integer moduleIndex, Integer elemenIndex,
-                                                       List<EppRegistryElement> elements,
-                                                       List<EppRegistryProfModule> modules,
+    private static List<Part2PartBond> createPart2Part(EppRegistryProfModule profModule,  EppRegistryElement registryElement,
                                                        HashMap<EppRegistryProfModule, List<EppRegistryElementPart>> module2Parts,
                                                        HashMap<EppRegistryElement, List<EppRegistryElementPart>> elem2Parts,
                                                        HashMap<EppRegistryProfModule, Collection<MainBond>> profModuleToBonds,
                                                        String... parts) {
-        List<EppRegistryElementPart> moduleParts = module2Parts.get(modules.get(moduleIndex));
-        List<EppRegistryElementPart> regElemParts = elem2Parts.get(elements.get(elemenIndex));
-        Optional<MainBond> mainBondOpt = profModuleToBonds.get(modules.get(moduleIndex))
+        List<EppRegistryElementPart> moduleParts = module2Parts.get(profModule);
+        List<EppRegistryElementPart> regElemParts = elem2Parts.get(registryElement);
+        Optional<MainBond> mainBondOpt = profModuleToBonds.get(profModule)
                 .stream()
-                .filter(mainBond -> mainBond.getElement().equals(elements.get(elemenIndex)))
+                .filter(mainBond -> mainBond.getElement().equals(registryElement))
                 .findFirst();
 
         return mainBondOpt
@@ -163,7 +158,7 @@ public class ListenerTest2 extends Assert {
      *
      * @param parts regElemPart - modulePart, example (1/2, 2/3)
      */
-    public static List<Part2PartBond> createDistribution (List<EppRegistryElementPart> moduleParts,
+    private static List<Part2PartBond> createDistribution (List<EppRegistryElementPart> moduleParts,
                                                             List<EppRegistryElementPart> elementParts,
                                                             MainBond mainBond,
                                                             String... parts){
@@ -207,7 +202,7 @@ public class ListenerTest2 extends Assert {
     @Parameters(method = "wrongDistributionData")
     public void test1(TestDataWrapper testDataWrapper){
         var illegalStateException = assertThrows(IllegalStateException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
-        assertTrue(illegalStateException.getMessage().contains("something"));
+        assertEquals("Нельзя согласовать на согласование профмодуль Модуль 1, т.к. распределены не все части вложенных элементов.", illegalStateException.getMessage());
     }
 
     @Before

@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * @author Melton Smith
  * @since 01.12.2020
  */
-
+@Deprecated
 @RunWith(Parameterized.class)
 public class ListenerTest extends Assert {
 
