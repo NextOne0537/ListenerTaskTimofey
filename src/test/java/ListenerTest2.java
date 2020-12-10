@@ -202,7 +202,7 @@ public class ListenerTest2 extends Assert {
     @Parameters(method = "wrongDistributionData")
     public void test1(TestDataWrapper testDataWrapper){
         var illegalStateException = assertThrows(IllegalStateException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
-        assertEquals("Нельзя согласовать на согласование профмодуль Модуль 1, т.к. распределены не все части вложенных элементов.", illegalStateException.getMessage());
+        assertEquals("Нельзя согласовать профмодуль Модуль 1, т.к. распределены не все части вложенных элементов.", illegalStateException.getMessage());
     }
 
     @Before
