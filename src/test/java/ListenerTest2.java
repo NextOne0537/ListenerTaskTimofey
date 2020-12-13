@@ -35,6 +35,10 @@ public class ListenerTest2 extends Assert {
         return List.of(testCase1());
     }
 
+    private static List<TestDataWrapper> elementsWithNoParts(){
+        return List.of(testCase3());
+    }
+
     /**
      * I expect "wrong distribution order" here because of
      * the element with index 3 (Вложенное мероприятие 3) and  the element with index 2 (Вложенное мероприятие 2)
@@ -144,7 +148,7 @@ public class ListenerTest2 extends Assert {
         Collection<MainBond> mainBonds = new ArrayList<>(modules.size());
         HashMap<EppRegistryProfModule, Collection<EppRegistryElement>> moduleToRegElements = new HashMap<>(modules.size());
         moduleToRegElements.put(modules.get(0), List.of(eppRegistryElements.get(3), eppRegistryElements.get(6), eppRegistryElements.get(7), eppRegistryElements.get(8)));
-//        moduleToRegElements.put(modules.get(1), eppRegistryElements.subList(4, 8));
+ //       moduleToRegElements.put(modules.get(1), eppRegistryElements.subList(4, 8));
 //        moduleToRegElements.put(modules.get(2), eppRegistryElements.subList(4, 8));
 //        moduleToRegElements.put(modules.get(3), eppRegistryElements.subList(4, 8));
 //        moduleToRegElements.put(modules.get(4), eppRegistryElements.subList(4, 8));
@@ -169,6 +173,63 @@ public class ListenerTest2 extends Assert {
         return new TestDataWrapper(module2Parts, elem2Parts, parts2Parts, mainBonds);
     }
 
+    /**
+     Creating test for cases where there are profmodules without parts (Модуль 2) and Elements without parts
+     */
+    public static TestDataWrapper testCase3(){
+        List<EppRegistryProfModule> modules = new ArrayList<>() {{
+            add(new EppRegistryProfModule("Модуль 1", EppState.Accepted));
+            add(new EppRegistryProfModule("Модуль 2", EppState.Accepted));
+        }};
+
+        //profModules
+        HashMap<EppRegistryProfModule, List<EppRegistryElementPart>> module2Parts = new HashMap<>(modules.size());
+
+        createParts(module2Parts, modules.get(0), 4);
+
+
+
+        //elements
+        HashMap<EppRegistryElement, List<EppRegistryElementPart>> elem2Parts = new HashMap<>(modules.size());
+        List<EppRegistryElement> eppRegistryElements = new ArrayList<>() {{
+            add(new EppRegistryElement("Вложенное мероприятие 0", EppState.Accepted));
+            add(new EppRegistryElement("Вложенное мероприятие 1", EppState.Accepted));
+            add(new EppRegistryElement("Вложенное мероприятие 2", EppState.Accepted));
+            add(new EppRegistryElement("Вложенное мероприятие 3", EppState.Accepted));
+        }};
+
+        //RegElements
+        createParts(elem2Parts, eppRegistryElements.get(0), 0);
+        createParts(elem2Parts, eppRegistryElements.get(1), 3);
+        createParts(elem2Parts, eppRegistryElements.get(2), 4);
+        createParts(elem2Parts, eppRegistryElements.get(3), 3);
+
+
+        //relations
+        Collection<MainBond> mainBonds = new ArrayList<>(modules.size());
+        HashMap<EppRegistryProfModule, Collection<EppRegistryElement>> moduleToRegElements = new HashMap<>(modules.size());
+        moduleToRegElements.put(modules.get(0), eppRegistryElements);
+
+
+        //module to its bonds
+        HashMap<EppRegistryProfModule, Collection<MainBond>> profModuleToBonds = new HashMap<>();
+
+        moduleToRegElements.forEach((profModule, collection) ->{
+            Collection<MainBond> mainBondsForModule = createMainBonds(profModule, collection);
+            profModuleToBonds.put(profModule, mainBondsForModule);
+            mainBonds.addAll(mainBondsForModule);
+        });
+
+        List<Part2PartBond> parts2Parts = new ArrayList<>();
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(1), module2Parts, elem2Parts, profModuleToBonds, "1/1", "2/2", "3/4"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(2), module2Parts, elem2Parts, profModuleToBonds, "1/1", "2/2", "3/3", "4/4"));
+        parts2Parts.addAll(createPart2Part(modules.get(0), eppRegistryElements.get(3), module2Parts, elem2Parts, profModuleToBonds, "1/2", "2/3", "3/4"));
+
+
+
+        return new TestDataWrapper(module2Parts, elem2Parts, parts2Parts, mainBonds);
+    }
+
 
 
     @Test
@@ -183,6 +244,13 @@ public class ListenerTest2 extends Assert {
     public void wrongDistributionOrderTest(TestDataWrapper testDataWrapper){
         var illegalStateException = assertThrows(IllegalStateException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
         assertEquals("Нельзя согласовать профмодуль Модуль 1, т.к. части вложенного мероприятия Вложенное мероприятие 2 распределены в неправильном порядке.", illegalStateException.getMessage());
+    }
+
+    @Test
+    @Parameters(method = "elementsWithNoParts")
+    public void elementsWithNoPartsTest(TestDataWrapper testDataWrapper){
+        var illegalStateException = assertThrows(IllegalStateException.class, () -> listener.onEvent(testDataWrapper.getProfModules(), testDataWrapper.getRegistryElements(), testDataWrapper.getMainBonds(), testDataWrapper.getPart2PartBonds()));
+        assertEquals("Something", illegalStateException.getMessage());
     }
 
     @Before
