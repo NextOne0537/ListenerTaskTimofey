@@ -77,11 +77,13 @@ public class Listener implements IListenProfModules {
                 int partsNumber_Should_Be = regElements.get(bond.getElement()).size();
                 int partsNUmber_Actual = 0;
                 HashMap<Integer,Integer> orderOfParts = new HashMap<>();
-
-                for (Part2PartBond partBond : part2PartBondList) if (partBond.getMainBond()==bond) {
-                    partsNUmber_Actual++;
-                    orderOfParts.putIfAbsent(partBond.getModulePart().getNumber(),partBond.getElementPart().getNumber()); // здесь заполняю мапу номерами частей элементов и профомдулей
-                }
+            if (part2PartBondList!=null) {
+                for (Part2PartBond partBond : part2PartBondList)
+                    if (partBond.getMainBond() == bond) {
+                        partsNUmber_Actual++;
+                        orderOfParts.putIfAbsent(partBond.getModulePart().getNumber(), partBond.getElementPart().getNumber()); // здесь заполняю мапу номерами частей элементов и профомдулей
+                    }
+            }
 
 
                 if (partsNUmber_Actual!=partsNumber_Should_Be){
